@@ -1,0 +1,48 @@
+create schema lab_05;
+create table lab_05.fn (x float, y float);
+insert into lab_05.fn (x) select random() * 10 from generate_series(1, 10000);
+update lab_05.fn set y=sin(x);
+alter table lab_05.fn add constraint pk_x primary key (x);
+
+create view lab_05.roots1 as
+select round(x::numeric, 2) as x from lab_05.fn where abs(y) < 0.0013 order by x;
+
+select*from lab_05.roots1;
+
+
+create view lab_05.positive as
+select x,y from lab_05.fn where y>0.0;
+
+insert into lab_05.positive_tab (x) select random() * 10 from generate_series(1, 10000);
+update lab_05.positive_tab set y=sin(x);
+alter table lab_05.positive_tab add constraint pk1_x primary key (x);
+
+select x,y from lab_05.positive order by x limit 20;
+
+--create table lab_05.positive_tab(x float, y float);
+--create rule "_RETURN" as on select to lab_05.positive_tab do instead
+--select*from lab_05.fn where y>0.0;
+
+update lab_05.positive set y = -y where y<0.5;
+
+update lab_05.fn set y=sin(x);
+
+create table lab_05.fn_backup as select * from lab_05.fn;
+select*from lab_05.fn_backup order by x limit 10;
+
+create rule prevent_updates as on update to lab_05.fn_backup do instead nothing;
+select * from pg_rules;
+
+update lab_05.fn_backup set y=0;
+select * from lab_05.fn_backup limit 10;
+
+delete from lab_05.positive where x>2.0 and x<8.0;
+
+delete from lab_05.fn;
+insert into lab_05.fn select * from lab_05.fn_backup;
+
+insert into lab_05.positive (x) select 10 * random() * 10 from generate_series(1,10000);
+update lab_05.fn set y=sin(x);
+
+--create extension file_fdw;
+--select * from pg_extension;
